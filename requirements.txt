@@ -3,8 +3,3 @@ uvicorn
 scikit-learn
 numpy
 gunicorn
-sqlalchemy
-psycopg2-binary
-datasets 
-pyarrow 
-fastparquet
