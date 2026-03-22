@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Scorix AI — ML-powered AI evaluation and ranking platform. Score, rank, and benchmark AI-generated responses.">
+    <title>Scorix AI — AI Evaluation & Ranking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- ─── Header ──────────────────────────────────────── -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <path d="M14 2L26 8V20L14 26L2 20V8L14 2Z" stroke="url(#grad)" stroke-width="2" fill="none"/>
+                    <path d="M14 8L20 11V17L14 20L8 17V11L14 8Z" fill="url(#grad)"/>
+                    <defs><linearGradient id="grad" x1="2" y1="2" x2="26" y2="26">
+                        <stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/>
+                    </linearGradient></defs>
+                </svg>
+            </div>
+            <h1 class="logo-text">Scorix<span class="logo-accent">AI</span></h1>
+        </div>
+        <p class="header-tagline">ML-Powered AI Evaluation & Ranking</p>
+    </header>
+
+    <!-- ─── Navigation Tabs ──────────────────────────────── -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="evaluate" id="tab-evaluate">
+            <span class="tab-icon">⚡</span> Evaluate
+        </button>
+        <button class="tab-btn" data-tab="rank" id="tab-rank">
+            <span class="tab-icon">🏆</span> Rank
+        </button>
+        <button class="tab-btn" data-tab="feedback" id="tab-feedback">
+            <span class="tab-icon">💬</span> Feedback
+        </button>
+        <button class="tab-btn" data-tab="dataset" id="tab-dataset">
+            <span class="tab-icon">📊</span> Dataset
+        </button>
+    </nav>
+
+    <!-- ─── Main Content ──────────────────────────────────── -->
+    <main class="main-content">
+
+        <!-- Evaluate Tab -->
+        <section class="tab-panel active" id="panel-evaluate">
+            <div class="card">
+                <h2 class="card-title">Prompt Playground</h2>
+                <p class="card-desc">Enter a prompt and an AI response to get an ML-predicted quality score.</p>
+                <div class="form-group">
+                    <label for="eval-prompt">Prompt</label>
+                    <textarea id="eval-prompt" rows="3" placeholder="e.g. What is artificial intelligence?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="eval-response">AI Response</label>
+                    <textarea id="eval-response" rows="4" placeholder="e.g. AI is the simulation of human intelligence by machines..."></textarea>
+                </div>
+                <button class="btn-primary" id="btn-evaluate" onclick="handleEvaluate()">
+                    <span class="btn-text">Evaluate Response</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </div>
+            <div class="result-area hidden" id="eval-result">
+                <div class="score-card">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="52" class="score-bg"/>
+                            <circle cx="60" cy="60" r="52" class="score-fill" id="score-circle"/>
+                        </svg>
+                        <span class="score-value" id="score-value">0</span>
+                    </div>
+                    <p class="score-label">Quality Score</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rank Tab -->
+        <section class="tab-panel" id="panel-rank">
+            <div class="card">
+                <h2 class="card-title">Rank Responses</h2>
+                <p class="card-desc">Enter a prompt and multiple AI responses to rank them by quality.</p>
+                <div class="form-group">
+                    <label for="rank-prompt">Prompt</label>
+                    <textarea id="rank-prompt" rows="3" placeholder="e.g. Explain machine learning"></textarea>
+                </div>
+                <div id="rank-responses-container">
+                    <div class="form-group response-input">
+                        <label>Response 1</label>
+                        <textarea class="rank-response" rows="3" placeholder="First AI response..."></textarea>
+                    </div>
+                    <div class="form-group response-input">
+                        <label>Response 2</label>
+                        <textarea class="rank-response" rows="3" placeholder="Second AI response..."></textarea>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-secondary" onclick="addResponseField()">+ Add Response</button>
+                    <button class="btn-primary" id="btn-rank" onclick="handleRank()">
+                        <span class="btn-text">Rank Responses</span>
+                        <span class="btn-loader hidden"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="result-area hidden" id="rank-result">
+                <h3 class="result-title">Ranking Results</h3>
+                <div id="rank-list"></div>
+            </div>
+        </section>
+
+        <!-- Feedback Tab -->
+        <section class="tab-panel" id="panel-feedback">
+            <div class="card">
+                <h2 class="card-title">Submit Feedback</h2>
+                <p class="card-desc">Help improve the model by providing your own quality score for a response.</p>
+                <div class="form-group">
+                    <label for="fb-prompt">Prompt</label>
+                    <textarea id="fb-prompt" rows="3" placeholder="The prompt that was used..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="fb-response">AI Response</label>
+                    <textarea id="fb-response" rows="4" placeholder="The AI response to rate..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="fb-score">Your Score (0–10)</label>
+                    <div class="score-input-row">
+                        <input type="range" id="fb-score" min="0" max="10" step="0.5" value="5">
+                        <span class="score-display" id="fb-score-display">5.0</span>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-feedback" onclick="handleFeedback()">
+                    <span class="btn-text">Submit Feedback</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Dataset Tab -->
+        <section class="tab-panel" id="panel-dataset">
+            <div class="card">
+                <h2 class="card-title">Upload Dataset & Retrain</h2>
+                <p class="card-desc">Upload a CSV file with <code>prompt, response, score</code> columns to retrain the model.</p>
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drag & drop a CSV file here or click to browse</p>
+                    <p class="upload-hint">Format: prompt, response, score</p>
+                    <input type="file" id="file-input" accept=".csv" hidden>
+                </div>
+                <div class="file-info hidden" id="file-info">
+                    <span class="file-name" id="file-name"></span>
+                    <button class="btn-remove" onclick="removeFile()">✕</button>
+                </div>
+                <button class="btn-primary" id="btn-upload" onclick="handleUpload()" disabled>
+                    <span class="btn-text">Upload & Retrain</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </div>
+            <div class="result-area hidden" id="train-result">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-value" id="metric-mae">—</span>
+                        <span class="metric-label">MAE</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="metric-r2">—</span>
+                        <span class="metric-label">R² Score</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="metric-samples">—</span>
+                        <span class="metric-label">Samples</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ─── Toast Container ────────────────────────────── -->
+    <div id="toast-container"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
