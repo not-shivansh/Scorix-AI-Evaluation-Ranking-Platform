@@ -1,6 +1,6 @@
 """
 Scorix AI — TF-IDF + Feature Engineered Scoring Model
-High-performance version for better R²
+Production-ready version (Render compatible)
 """
 
 import os
@@ -15,20 +15,38 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics.pairwise import cosine_similarity
 
 # ---------------------------
-# PATHS
+# PATH FIX (CRITICAL)
 # ---------------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # backend/
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))  # root/
+
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 MODEL_PATH = os.path.join(DATA_DIR, "model.pkl")
 VECTORIZER_PATH = os.path.join(DATA_DIR, "vectorizer.pkl")
+
+# ---------------------------
+# DEBUG (IMPORTANT)
+# ---------------------------
+print("\n==== DEBUG PATHS ====")
+print("BASE_DIR:", BASE_DIR)
+print("PROJECT_ROOT:", PROJECT_ROOT)
+print("DATA_DIR:", DATA_DIR)
+print("MODEL_PATH:", MODEL_PATH)
+print("MODEL EXISTS:", os.path.exists(MODEL_PATH))
+
+if os.path.exists(DATA_DIR):
+    print("FILES IN DATA:", os.listdir(DATA_DIR))
+else:
+    print("DATA DIR NOT FOUND")
+
+print("=====================\n")
 
 # ---------------------------
 # GLOBALS
 # ---------------------------
 _model = None
 _vectorizer = None
-
 
 # ---------------------------
 # LOAD MODEL
@@ -40,20 +58,26 @@ def _load():
         return True
 
     if not os.path.exists(MODEL_PATH):
+        print("❌ MODEL NOT FOUND:", MODEL_PATH)
         return False
 
-    with open(MODEL_PATH, "rb") as f:
-        _model = pickle.load(f)
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            _model = pickle.load(f)
 
-    with open(VECTORIZER_PATH, "rb") as f:
-        _vectorizer = pickle.load(f)
+        with open(VECTORIZER_PATH, "rb") as f:
+            _vectorizer = pickle.load(f)
 
-    return True
+        print("✅ MODEL LOADED SUCCESSFULLY")
+        return True
+
+    except Exception as e:
+        print("❌ MODEL LOAD ERROR:", e)
+        return False
 
 
 def load_model():
     return _load()
-
 
 # ---------------------------
 # FEATURE ENGINEERING
@@ -81,7 +105,6 @@ def extract_features(prompt, response, vectorizer):
 
     return features
 
-
 # ---------------------------
 # PREDICT
 # ---------------------------
@@ -90,7 +113,7 @@ def predict_score(prompt: str, response: str) -> float:
 
     if _model is None or _vectorizer is None:
         if not _load():
-            raise RuntimeError("Model not trained. Run train.py")
+            raise RuntimeError("Model not loaded. Check model files.")
 
     features = extract_features(prompt, response, _vectorizer)
 
@@ -98,9 +121,8 @@ def predict_score(prompt: str, response: str) -> float:
 
     return round(max(0.0, min(10.0, float(score))), 2)
 
-
 # ---------------------------
-# TRAIN MODEL
+# TRAIN MODEL (LOCAL USE ONLY)
 # ---------------------------
 def train_model(csv_path: str):
     global _model, _vectorizer
@@ -118,12 +140,6 @@ def train_model(csv_path: str):
 
     print("[INFO] Computing engineered features...")
 
-    # Similarity
-    vec_pair = vectorizer.transform(
-        df["prompt"].astype(str).tolist() +
-        df["response"].astype(str).tolist()
-    )
-
     similarity = []
     for p, r in zip(df["prompt"], df["response"]):
         pair = vectorizer.transform([p, r])
@@ -131,19 +147,14 @@ def train_model(csv_path: str):
 
     similarity = np.array(similarity)
 
-    # Length
     length = df["response"].str.len().values
-
-    # Word count
     word_count = df["response"].str.split().apply(len).values
 
-    # Overlap
     overlap = np.array([
         len(set(p.lower().split()) & set(r.lower().split()))
         for p, r in zip(df["prompt"], df["response"])
     ])
 
-    # Combine all features
     X = np.hstack((
         X_text.toarray(),
         similarity.reshape(-1, 1),
@@ -157,9 +168,8 @@ def train_model(csv_path: str):
         X, y, test_size=0.2, random_state=42
     )
 
-    print("[INFO] Training GradientBoosting model...")
+    print("[INFO] Training model...")
     model = GradientBoostingRegressor()
-
     model.fit(X_train, y_train)
 
     print("[INFO] Evaluating...")
@@ -171,7 +181,6 @@ def train_model(csv_path: str):
     print(f"[RESULT] MAE: {mae:.4f}")
     print(f"[RESULT] R2: {r2:.4f}")
 
-    # Save
     os.makedirs(DATA_DIR, exist_ok=True)
 
     with open(MODEL_PATH, "wb") as f:
